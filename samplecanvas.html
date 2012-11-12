@@ -1,0 +1,271 @@
+<!-- Sample Canvas -->
+<html>
+<head>
+	<!--<script type="text/javascript" src='js/RoomItem.js'></script>
+	<script type="text/javascript" src='js/DEFAULTS.js'></script>
+	<script type="text/javascript" src='js/Room.js'></script>
+	<script type="text/javascript" src='js/Door.js'></script>
+	<script type="text/javascript" src='js/RoomGenerator.js'></script>
+	<script type="text/javascript" src='js/level_generator.js'></script>  -->
+	<script type="text/javascript" src='js/hud.js'></script>
+	<script type="text/javascript" src='js/buffer-loader.js'></script> 
+	<script type="text/javascript" src='js/audioManager.js'></script>
+	<script type="text/javascript" src="http://code.jquery.com/jquery-1.8.0.js"></script>
+	<script type="text/javascript">
+	var drawQueue = $({});
+function drawObject(x, y, w, h, url){
+	var img = new Image();
+        img.src = url;
+       img.onload = function() {
+	        var ctx = $('#playcanvas')[0].getContext('2d');
+	        ctx.drawImage(img, x, y);
+	        $(drawQueue).dequeue('fx');
+   		};        
+};
+
+function rotateObject(x, y, w, h, url, deg){
+		// we screw with it
+	var img = new Image();
+        img.src = url;
+       img.onload = function() {
+       	var ctx = $('#playcanvas')[0].getContext('2d');
+		ctx.save(); 
+		// now move across and down half the 
+		// width and height of the image (which is 128 x 128)
+		ctx.translate(x, y); 
+		// rotate around this point
+		ctx.rotate(deg); 
+		 ctx.translate(-w/2, -h/2);
+		// then draw the image back and up
+		ctx.drawImage(img, 0, 0); 
+		 
+		// and restore the co-ordinate system to its default
+		// top left origin with no rotation
+		ctx.restore();
+		$(drawQueue).dequeue('fx');
+		};  
+}
+
+function navigateRooms(num){
+	console.log('started debug');
+	levelManager.rooms = [];
+	levelManager.rooms[0] = {
+	"id":0,
+	"doors":{
+		"0":
+			{"direction":"south","doorParent":0},
+		"1":{"direction":"north","doorParent":1}
+	},
+	"props":[{"x":317.88548988103867,"y":260.0712032318115,"height":30,"width":30,"type":"collectibles","url":"http://placekitten.com/30/30","speed":3,"frameCount":1},{"x":742.4339042901993,"y":355.48459392786026,"height":30,"width":30,"type":"collectibles","url":"http://placekitten.com/30/30","speed":3,"frameCount":1},{"x":680.7818452119827,"y":250.64887118339539,"height":30,"width":30,"type":"collectibles","url":"http://placekitten.com/30/30","speed":3,"frameCount":1},{"x":48.748646914958954,"y":606.0315794348717,"height":30,"width":30,"type":"obstacle","url":"http://placekitten.com/30/30","speed":3,"frameCount":1},{"x":386.9441151022911,"y":604.0921134352684,"height":30,"width":30,"type":"obstacle","url":"http://placekitten.com/30/30","speed":3,"frameCount":1},{"x":209.0326446890831,"y":341.18331080675125,"height":30,"width":30,"type":"obstacle","url":"http://placekitten.com/30/30","speed":3,"frameCount":1},{"x":405.2365962266922,"y":3.223741829395294,"height":30,"width":30,"type":"prop","url":"http://placekitten.com/30/30","speed":3,"frameCount":1},{"x":544.0520063638687,"y":583.0158553719521,"height":30,"width":30,"type":"prop","url":"http://placekitten.com/30/30","speed":3,"frameCount":1},{"x":182.11704629659653,"y":657.0578257441521,"height":30,"width":30,"type":"prop","url":"http://placekitten.com/30/30","speed":3,"frameCount":1}],"obstacles":[{"x":48.748646914958954,"y":606.0315794348717,"height":30,"width":30,"type":"obstacle","url":"http://placekitten.com/30/30","speed":3,"frameCount":1},{"x":386.9441151022911,"y":604.0921134352684,"height":30,"width":30,"type":"obstacle","url":"http://placekitten.com/30/30","speed":3,"frameCount":1},{"x":209.0326446890831,"y":341.18331080675125,"height":30,"width":30,"type":"obstacle","url":"http://placekitten.com/30/30","speed":3,"frameCount":1}],
+	"floorURL":"img/floor.png",
+	"roomHeight":768,
+	"roomWidth":768
+	};
+	// rm.doorCount = 2;
+	drawRoom(levelManager.rooms[0]);
+	currentRoom = 0;
+	var i = 0;
+	var randInt;
+	var door;
+	var doors = [];
+	while(i < num){
+		for(keys in levelManager.rooms[currentRoom].doors){
+			doors.push(keys);
+		}
+		randInt = ~~(Math.random() * doors.length);
+		if(randInt == 0){ randInt = 1; }
+		var nextRoom = doors[randInt];
+		door = levelManager.rooms[currentRoom].doors[nextRoom];
+		drawRoom(levelManager.navigate({'index' : nextRoom, 'doorParent' : currentRoom}))
+		console.log("i: " + i);
+		console.log(currentRoom);
+		i += 1;
+		doorCount = 0;
+		doors = [];
+	}
+	console.log(levelManager.rooms);
+	
+}
+function drawMinimap(){
+	 var ctx = $('#minicanvas')[0].getContext('2d');
+	 var x = 384;
+	 var y = 384;
+	 ctx.clearRect ( 0 , 0 , 768 , 768 );
+	ctx.font      = "normal 36px Verdana";
+	ctx.strokeStyle = 'black';
+	ctx.fillStyle = "#000000";
+	ctx.strokeRect(x, y, 50, 50);
+    ctx.fillText("0", x+15, y+40);
+   	 $.each(levelManager.rooms, function(index, value){
+		if(levelManager.rooms[index] !== undefined){
+		   	 	$.each(value.doors, function(i, v){
+		   	 		if((levelManager.rooms[i] !== undefined) && (i !== '0')){
+			   	 		
+			   	 		switch(v.direction){
+			   	 			case "north":
+			   	 				y = y - 50;
+			   	 			break;
+			   	 			case "south":
+			   	 				y = y + 50;
+			   	 			break;
+			   	 			case "east":
+			   	 				x = x + 50;
+			   	 			break;
+			   	 			case "west":
+			   	 				x = x - 50;
+			   	 			break;
+			   	 		}
+                	ctx.strokeRect(x, y, 50, 50);
+                	ctx.fillText(i, x+15, y+40);
+		   	 		}
+		   	 	});
+	   	 }
+   	 });
+	 ctx.closePath();
+	 ctx.stroke();
+}
+
+
+function drawWalls(room){
+	var wall = new Image();
+	wall.src = room.walls.wall.url;
+	var corner = new Image();
+	corner.src = room.walls.corner.url;
+	var widthWithWall = (room.roomWidth + (2*room.wallDepth));
+	console.log('wwW: ' + widthWithWall);
+	console.log(widthWithWall - room.wallDepth)
+	var heightWithWall = (room.roomHeight + (2*room.wallDepth))
+    wall.onload = function() {
+	        var ctx = $('#playcanvas')[0].getContext('2d')
+	        for(var i = 0; i< widthWithWall; i+= wall.width){
+	        	for(var j = 0; j< heightWithWall; j+= wall.height){
+	        		if(i ==0 || j==0){
+	        			ctx.drawImage(wall, i, j);
+	        		}
+	        	}
+	        }
+	        for(var j = 0; j < heightWithWall; j += wall.height){
+	        	ctx.drawImage(wall, (widthWithWall - room.wallDepth), j);
+	        }
+	        for(var i = 0; i < widthWithWall; i += wall.width){
+	        	ctx.drawImage(wall, i, (heightWithWall - room.wallDepth));
+	        }
+
+   	}
+}
+function drawFloor(room){
+	var img = new Image();
+    img.src = room.floorURL;
+    var widthWithWall = (room.roomWidth + (2*room.wallDepth));
+    var heightWithWall = (room.roomHeight + (2*room.wallDepth));
+    $('#playcanvas').attr({
+    	'width': room.roomWidth + (2*room.wallDepth),
+    	'height': room.roomHeight + (2*room.wallDepth)
+    })
+    img.onload = function() {
+	        var ctx = $('#playcanvas')[0].getContext('2d')
+   		for(var i = 0; i< heightWithWall; i += img.width){
+   			for(var j = 0; j< widthWithWall; j += img.height){
+					 ctx.drawImage(img, i, j);
+   			}
+   		}
+
+   	}
+}
+
+function drawRoom(room){
+	console.log(room);
+	$(drawQueue).queue('fx', function(){
+		drawFloor(room);
+		$(drawQueue).dequeue();
+	})
+	$.each(room.props, function(index, value){
+		$(drawQueue).queue('fx', function(){
+			if((value.rotation != 0)&&(value.rotation != undefined)){
+				rotateObject(value.x,value.y, value.width, value.height,value.url, (value.rotation/180));
+			}else{
+				drawObject(value.x,value.y, value.width, value.height,value.url);
+			}
+			
+		})
+	});
+	$.each(room.obstacles, function(index, value){
+		$(drawQueue).queue('fx', function(){
+			if((value.rotation != 0)&&(value.rotation != undefined)){
+				rotateObject(value.x,value.y, value.width, value.height,value.url, (value.rotation/180));
+			}else{
+				drawObject(value.x,value.y, value.width, value.height,value.url);
+			}
+			
+		})
+	});
+}
+        
+
+	</script>
+	<style type="text/css">
+	 @-webkit-keyframes animate-glow {
+		 0% { -webkit-box-shadow: 0 5px 5px rgba(255, 255, 255, .7) inset, 0 -5px 5px rgba(255, 255, 255, .7) inset;} 
+		 50% { -webkit-box-shadow: 0 5px 5px rgba(255, 255, 255, .3) inset, 0 -5px 5px rgba(255, 255, 255, .3) inset;} 
+		 100% { -webkit-box-shadow: 0 5px 5px rgba(255, 255, 255, .7) inset, 0 -5px 5px rgba(255, 255, 255, .7) inset;}
+	}
+     #hunger{
+     	text-align: center;
+     	width: 500px;
+     	height: 25px;
+	}
+     #hungerLevel{
+     	margin: 0 auto;
+		width: 100%;
+		height: 100%;
+		background: #00520D;
+		border-radius: 7px;
+		background-color: #A5DF41;
+		background-image: -webkit-gradient(linear, left top, left bottom, from(#A5DF41), to(#4CA916));
+		background-image: -webkit-linear-gradient(top, #A5DF41, #4CA916);
+		-webkit-box-shadow: 0 5px 5px rgba(255, 255, 255, .7) inset, 0 -5px 5px rgba(255, 255, 255, .7) inset;
+		box-shadow: 0 5px 5px rgba(255, 255, 255, .7) inset, 0 -5px 5px rgba(255, 255, 255, .7) inset;
+		-webkit-animation: animate-glow 1s ease-out infinite;
+		-webkit-transition: 1s linear;
+     }
+
+     #supply{
+     	margin-top:5px;
+     	text-align: center;
+     	width: 500px;
+     	height: 25px;
+	}
+     #supplyLevel{
+     	margin: 0 auto;
+		width: 	0%;
+		height: 100%;
+		border-radius: 7px;	
+		-webkit-animation: animate-glow 1s ease-out infinite;
+     }
+     .yellow{
+     	background: #fff64c; /* Old browsers */
+		background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#fff64c), color-stop(100%,#bfb71a)); /* Chrome,Safari4+ */
+		box-shadow: 0 5px 5px rgba(255, 255, 255, .7) inset, 0 -5px 5px rgba(255, 255, 255, .7) inset;
+     }
+     .orange{
+     	background: #fca94b; /* Old browsers */
+		background: -moz-linear-gradient(top, #fca94b 0%, #bf7d1a 100%); /* FF3.6+ */
+		background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#fca94b), color-stop(100%,#bf7d1a)); /* Chrome,Safari4+ */
+     }
+	</style>
+</head>
+	<body style="background: #000000;">
+		<div id="hunger">
+			<div id="hungerLevel">
+			</div>
+		</div>
+		<div id="supply">
+			<div id="supplyLevel" class="yellow">
+			</div>
+		</div>
+		<canvas id="playcanvas" width="768" height="768"></canvas> 
+		<canvas id="minicanvas" width="768" height="768"></canvas> 
+		<div id="roomNumber"> 0/M </div>
+		<a onclick="navigateRooms()">navigateRooms</a>
+	</body>
+</html>
